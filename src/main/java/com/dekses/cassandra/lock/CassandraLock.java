@@ -62,9 +62,13 @@ public class CassandraLock implements Lock {
 
 	/**
 	 * Releases lock lease using DELETE query.
+	 * Throws exception if query not applied, it means lock lease was lost.
 	 */
-	public void unlock() {
-		session.execute(deletePrep.bind(name, owner));
+	public void unlock() throws LockLeaseLostException {
+		ResultSet rs = session.execute(deletePrep.bind(name, owner));
+		if (!rs.wasApplied()) {
+			throw new LockLeaseLostException();
+		}
 	}
 
 	/**

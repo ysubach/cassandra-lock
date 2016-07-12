@@ -13,8 +13,9 @@ public interface Lock {
 
 	/**
 	 * Releases current lock lease
+	 * @throws LockLeaseLostException Thrown in case lock lease lost by the owner
 	 */
-	void unlock();
+	void unlock() throws LockLeaseLostException;
 
 	/**
 	 * Updates current lock lease

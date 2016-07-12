@@ -68,6 +68,20 @@ public class CassandraLockTest {
 		assertTrue(l2.tryLock());
 	}
 	
+	@Test(expected=LockLeaseLostException.class)
+	public void testLockAndUnlockException() throws InterruptedException {
+		LockFactory lf1 = new LockFactory(HOST, KEYSPACE);
+		assertNotNull(lf1);
+		Lock l1 = lf1.getLock("test");
+		assertTrue(l1.tryLock());
+		
+		// simulates lock loss due to TTL
+	    session.execute("TRUNCATE lock_leases");
+	    Thread.sleep(1000);
+		
+		l1.unlock();
+	}
+	
 	@Test
 	public void testKeepAlive() {
 		LockFactory lf1 = new LockFactory(HOST, KEYSPACE);
@@ -88,7 +102,7 @@ public class CassandraLockTest {
 		
 		// simulates lock loss due to TTL
 	    session.execute("TRUNCATE lock_leases");
-	    Thread.sleep(3000);
+	    Thread.sleep(1000);
 		
 		l1.keepAlive();
 	}
