@@ -30,10 +30,10 @@ session object or by providing cluster contact points and keyspace:
 
 ```java
 // with session
-LockFactory lf = new LockFactory(session);
+LockFactory lockFactory = new LockFactory(session);
 
 // with contact points and keyspace
-LockFactory lf = new LockFactory("127.0.0.1", "casslock_test");
+LockFactory lockFactory = new LockFactory("127.0.0.1", "casslock_test");
 ```
 
 Alternatively, if you prefer to use factory singleton object, you can
@@ -48,7 +48,7 @@ LockFactory.initialize(session);
 LockFactory.initialize("127.0.0.1", "casslock_test");
 
 // Retrieve factory object
-LockFactory lf = LockFactory.getInstance();
+LockFactory lockFactory = LockFactory.getInstance();
 ```
 
 ### Lock
@@ -56,7 +56,7 @@ LockFactory lf = LockFactory.getInstance();
 Create new `Lock` instances using `LockFactory` object:
 
 ```java
-Lock lock = LockFactory.getLock("my-resource");
+Lock lock = lockFactory.getLock("my-resource");
 if (lock.tryLock()) {
     try {
       // do something related to my-resource
@@ -67,5 +67,8 @@ if (lock.tryLock()) {
     } finally {
       lock.unlock();
     }
+} else {
+    // Can not acquire lock on resource,
+    // it's already taken by other owner/process
 }
 ```
