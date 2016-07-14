@@ -19,6 +19,9 @@ public class LockFactory {
 	/** Owner name */
 	private String owner;
 	
+	/** Default lock time to live in seconds */
+	private int defaultTTL = 60;
+	
 	/**
 	 * Constructor, uses Cassandra session
 	 * @param session External Cassandra session
@@ -54,13 +57,30 @@ public class LockFactory {
 	}
 	
 	/**
+	 * Set new default TTL for locks
+	 * @param ttl New TTL value
+	 */
+	public void setDefaultTTL(int ttl) {
+		defaultTTL = ttl;
+	}
+	
+	/**
 	 * Lock factory method
 	 * @param resource Unique name of resource to be locked
 	 * @return New lock object
 	 */
 	public Lock getLock(final String resource) {
-		CassandraLock cassLock = new CassandraLock(session, owner, resource);
-		return cassLock;
+		return new CassandraLock(session, owner, resource, defaultTTL);
+	}
+	
+	/**
+	 * Lock factory method, supports custom TTL
+	 * @param resource Unique name of resource to be locked
+	 * @param ttl Custom TTL value for lock
+	 * @return New lock object
+	 */
+	public Lock getLock(final String resource, final int ttl) {
+		return new CassandraLock(session, owner, resource, ttl);
 	}
 
 	/// --- Singleton implementation below --- ///

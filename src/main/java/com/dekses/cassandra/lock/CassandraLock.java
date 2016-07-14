@@ -21,6 +21,9 @@ public class CassandraLock implements Lock {
 	/** Lock lease (resource) name */
 	private String name;
 	
+	/** Lock time to live in seconds */
+	private int ttl;
+	
 	// Prepared CQL statements
 	private PreparedStatement insertPrep;
 	private PreparedStatement selectPrep;
@@ -32,12 +35,14 @@ public class CassandraLock implements Lock {
 	 * @param session
 	 * @param owner
 	 * @param name
+	 * @param ttl
 	 */
-	public CassandraLock(Session session, String owner, String name) {
+	public CassandraLock(Session session, String owner, String name, int ttl) {
 		this.session = session;
 		this.owner = owner;
 		this.name = name;
-		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS");
+		this.ttl = ttl;
+		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS USING TTL ?"); // 
 		insertPrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 		selectPrep = session.prepare("SELECT * FROM lock_leases WHERE name = ?");
 		selectPrep.setConsistencyLevel(ConsistencyLevel.SERIAL);
@@ -47,11 +52,26 @@ public class CassandraLock implements Lock {
 		updatePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 	}
 	
+	/** @return Lock owner */
+	public String getOwner() {
+		return owner;
+	}
+
+	/** @return Lock resource name */
+	public String getName() {
+		return name;
+	}
+
+	/** @return Lock TTL */
+	public int getTTL() {
+		return ttl;
+	}
+
 	/**
 	 * Try to acquire lock lease, uses INSERT query.
 	 */
 	public boolean tryLock() {
-		ResultSet rs = session.execute(insertPrep.bind(name, owner));
+		ResultSet rs = session.execute(insertPrep.bind(name, owner, ttl));
 		if (rs.wasApplied()) {
 			return true;
 		} else {

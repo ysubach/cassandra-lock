@@ -22,7 +22,7 @@ CREATE TABLE lock_leases (
     name text PRIMARY KEY,
     owner text,
     value text
-) WITH default_time_to_live = 180;
+) WITH default_time_to_live = 60;
 ```
 
 In your Java code create `LockFactory` instance using existing Cassandra
@@ -71,4 +71,27 @@ if (lock.tryLock()) {
     // Can not acquire lock on resource,
     // it's already taken by other owner/process
 }
+```
+
+### TTL (time to live)
+
+Each lock lease has TTL measured in seconds. It is 60 seconds by default, if
+lease is not updated during this interval using keepAlive() method call it will
+be automatically removed.
+
+You can change default TTL for LockFactory, it affects every lock created by
+this factory (excluding locks that already exist).
+
+```java
+// local object
+lockFactory.setDefaultTTL(120);
+
+// singleton
+LockFactory.getInstance().setDefaultTTL(120);
+```
+
+Also TTL can be specified for each individual lock object.
+
+```java
+Lock lock = lockFactory.getLock("my-resource", 120);
 ```

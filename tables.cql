@@ -10,4 +10,4 @@ CREATE TABLE lock_leases (
     name text PRIMARY KEY,
     owner text,
     value text
-) WITH default_time_to_live = 180;
+) WITH default_time_to_live = 60;

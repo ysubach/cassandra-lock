@@ -22,4 +22,13 @@ public interface Lock {
 	 * @throws LockLeaseLostException Thrown in case lock lease lost by the owner
 	 */
 	void keepAlive() throws LockLeaseLostException;
+	
+	/** @return Lock owner */
+	String getOwner();
+	
+	/** @return Lock resource name */
+	String getName();
+
+	/** @return Lock TTL */
+	int getTTL();
 }
