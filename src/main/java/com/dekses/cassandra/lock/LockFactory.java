@@ -100,7 +100,7 @@ public class LockFactory {
 	}
 	
 	/**
-	 * Lock factory method, supports custom TTL
+	 * Lock factory method, supports custom owner
 	 * @param resource Unique name of resource to be locked
 	 * @param owner Custom owner of lock
 	 * @return New lock object
@@ -108,16 +108,26 @@ public class LockFactory {
 	public Lock getLock(final String resource, final String owner) {
 		return new CassandraLock(session, owner, resource, defaultTTL, insertPrep, selectPrep, deletePrep, updatePrep);
 	}
-
 	
 	/**
-	 * Lock factory method, supports custom owner
+	 * Lock factory method, supports custom TTL
 	 * @param resource Unique name of resource to be locked
 	 * @param ttl Custom TTL value for lock
 	 * @return New lock object
 	 */
 	public Lock getLock(final String resource, final int ttl) {
 		return new CassandraLock(session, defaultOwner, resource, ttl, insertPrep, selectPrep, deletePrep, updatePrep);
+	}
+	
+	/**
+	 * Lock factory method, supports custom owner and TTL
+	 * @param resource Unique name of resource to be locked
+	 * @param owner Custom owner of lock
+	 * @param ttl Custom TTL value for lock
+	 * @return New lock object
+	 */
+	public Lock getLock(final String resource, final String owner, final int ttl) {
+		return new CassandraLock(session, owner, resource, ttl, insertPrep, selectPrep, deletePrep, updatePrep);
 	}
 	
 	
