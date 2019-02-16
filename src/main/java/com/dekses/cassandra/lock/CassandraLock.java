@@ -1,6 +1,5 @@
 package com.dekses.cassandra.lock;
 
-import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -36,20 +35,20 @@ public class CassandraLock implements Lock {
 	 * @param owner
 	 * @param name
 	 * @param ttl
+	 * @param insertPrep
+	 * @param selectPrep
+	 * @param deletePrep
+	 * @param updatePrep
 	 */
-	public CassandraLock(Session session, String owner, String name, int ttl) {
+	public CassandraLock(Session session, String owner, String name, int ttl, PreparedStatement insertPrep, PreparedStatement selectPrep, PreparedStatement deletePrep, PreparedStatement updatePrep) {
 		this.session = session;
 		this.owner = owner;
 		this.name = name;
 		this.ttl = ttl;
-		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS USING TTL ?"); // 
-		insertPrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
-		selectPrep = session.prepare("SELECT * FROM lock_leases WHERE name = ?");
-		selectPrep.setConsistencyLevel(ConsistencyLevel.SERIAL);
-		deletePrep = session.prepare("DELETE FROM lock_leases where name = ? IF owner = ?");
-		deletePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
-		updatePrep = session.prepare("UPDATE lock_leases set owner = ? where name = ? IF owner = ?");
-		updatePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
+		this.insertPrep = insertPrep;
+		this.selectPrep = selectPrep;
+		this.deletePrep = deletePrep;
+		this.updatePrep = updatePrep;
 	}
 	
 	/** @return Lock owner */

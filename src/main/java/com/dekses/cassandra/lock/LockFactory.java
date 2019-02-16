@@ -3,6 +3,8 @@ package com.dekses.cassandra.lock;
 import java.util.UUID;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Cluster.Builder;
 import com.datastax.driver.core.Session;
 
@@ -21,6 +23,13 @@ public class LockFactory {
 	
 	/** Default lock time to live in seconds */
 	private int defaultTTL = 60;
+	
+	// Prepared CQL statements
+	private PreparedStatement insertPrep;
+	private PreparedStatement selectPrep;
+	private PreparedStatement deletePrep;
+	private PreparedStatement updatePrep;
+	
 	
 	/**
 	 * Constructor, uses Cassandra session
@@ -54,6 +63,14 @@ public class LockFactory {
 	 */
 	private void generalInit() {
 		owner = UUID.randomUUID().toString();
+		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS USING TTL ?"); // 
+		insertPrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
+		selectPrep = session.prepare("SELECT * FROM lock_leases WHERE name = ?");
+		selectPrep.setConsistencyLevel(ConsistencyLevel.SERIAL);
+		deletePrep = session.prepare("DELETE FROM lock_leases where name = ? IF owner = ?");
+		deletePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
+		updatePrep = session.prepare("UPDATE lock_leases set owner = ? where name = ? IF owner = ?");
+		updatePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 	}
 	
 	/**
@@ -70,7 +87,7 @@ public class LockFactory {
 	 * @return New lock object
 	 */
 	public Lock getLock(final String resource) {
-		return new CassandraLock(session, owner, resource, defaultTTL);
+		return new CassandraLock(session, owner, resource, defaultTTL, insertPrep, selectPrep, deletePrep, updatePrep);
 	}
 	
 	/**
@@ -80,7 +97,7 @@ public class LockFactory {
 	 * @return New lock object
 	 */
 	public Lock getLock(final String resource, final int ttl) {
-		return new CassandraLock(session, owner, resource, ttl);
+		return new CassandraLock(session, owner, resource, ttl, insertPrep, selectPrep, deletePrep, updatePrep);
 	}
 
 	/// --- Singleton implementation below --- ///
