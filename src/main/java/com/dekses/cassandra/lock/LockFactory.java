@@ -18,8 +18,8 @@ public class LockFactory {
 	/** Current Cassandra session */
 	private Session session;
 	
-	/** Owner name */
-	private String owner;
+	/** Default owner name */
+	private String defaultOwner;
 	
 	/** Default lock time to live in seconds */
 	private int defaultTTL = 60;
@@ -62,7 +62,7 @@ public class LockFactory {
 	 * Generates random owner name for the factory.
 	 */
 	private void generalInit() {
-		owner = UUID.randomUUID().toString();
+		defaultOwner = UUID.randomUUID().toString();
 		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS USING TTL ?"); // 
 		insertPrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 		selectPrep = session.prepare("SELECT * FROM lock_leases WHERE name = ?");
@@ -80,6 +80,15 @@ public class LockFactory {
 	public void setDefaultTTL(int ttl) {
 		defaultTTL = ttl;
 	}
+
+	/**
+	 * Set new default owner of lock
+	 * @param owner New owner of lock
+	 */
+	public void setDefaultOwner(String owner) {
+		defaultOwner = owner;
+	}
+	
 	
 	/**
 	 * Lock factory method
@@ -87,19 +96,31 @@ public class LockFactory {
 	 * @return New lock object
 	 */
 	public Lock getLock(final String resource) {
-		return new CassandraLock(session, owner, resource, defaultTTL, insertPrep, selectPrep, deletePrep, updatePrep);
+		return new CassandraLock(session, defaultOwner, resource, defaultTTL, insertPrep, selectPrep, deletePrep, updatePrep);
 	}
 	
 	/**
 	 * Lock factory method, supports custom TTL
 	 * @param resource Unique name of resource to be locked
+	 * @param owner Custom owner of lock
+	 * @return New lock object
+	 */
+	public Lock getLock(final String resource, final String owner) {
+		return new CassandraLock(session, owner, resource, defaultTTL, insertPrep, selectPrep, deletePrep, updatePrep);
+	}
+
+	
+	/**
+	 * Lock factory method, supports custom owner
+	 * @param resource Unique name of resource to be locked
 	 * @param ttl Custom TTL value for lock
 	 * @return New lock object
 	 */
 	public Lock getLock(final String resource, final int ttl) {
-		return new CassandraLock(session, owner, resource, ttl, insertPrep, selectPrep, deletePrep, updatePrep);
+		return new CassandraLock(session, defaultOwner, resource, ttl, insertPrep, selectPrep, deletePrep, updatePrep);
 	}
-
+	
+	
 	/// --- Singleton implementation below --- ///
 	
 	/** Single instance */
