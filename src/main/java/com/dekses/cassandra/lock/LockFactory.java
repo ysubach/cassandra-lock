@@ -67,9 +67,9 @@ public class LockFactory {
 		insertPrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 		selectPrep = session.prepare("SELECT * FROM lock_leases WHERE name = ?");
 		selectPrep.setConsistencyLevel(ConsistencyLevel.SERIAL);
-		deletePrep = session.prepare("DELETE FROM lock_leases where name = ? IF owner = ?");
+		deletePrep = session.prepare("DELETE FROM lock_leases WHERE name = ? IF owner = ?");
 		deletePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
-		updatePrep = session.prepare("UPDATE lock_leases set owner = ? where name = ? IF owner = ?");
+		updatePrep = session.prepare("UPDATE lock_leases USING TTL ? SET owner = ? WHERE name = ? IF owner = ?");
 		updatePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 	}
 	
