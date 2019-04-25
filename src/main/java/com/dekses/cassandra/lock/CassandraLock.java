@@ -95,7 +95,7 @@ public class CassandraLock implements Lock {
 	 * Throws exception if query not applied, it means lock lease was lost.
 	 */
 	public void keepAlive() throws LockLeaseLostException {
-		ResultSet rs = session.execute(updatePrep.bind(owner, name, owner));
+		ResultSet rs = session.execute(updatePrep.bind(ttl, owner, name, owner));
 		if (!rs.wasApplied()) {
 			throw new LockLeaseLostException();
 		}
