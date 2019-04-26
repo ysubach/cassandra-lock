@@ -13,7 +13,7 @@ Add Maven dependency in your project:
 <dependency>
   <groupId>com.dekses</groupId>
   <artifactId>cassandra-lock</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
 </dependency>
 ```
 
