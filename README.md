@@ -8,7 +8,18 @@ Cassandra](http://www.datastax.com/dev/blog/consensus-on-cassandra)
 
 ## Installation
 
-_TODO_
+Add Maven dependency in your project:
+```
+<dependency>
+  <groupId>com.dekses</groupId>
+  <artifactId>cassandra-lock</artifactId>
+  <version>0.0.2</version>
+</dependency>
+```
+
+More details for other build systems and latest version available at
+[Maven Central 
+repository](https://search.maven.org/artifact/com.dekses/cassandra-lock).
 
 ## Usage
 
