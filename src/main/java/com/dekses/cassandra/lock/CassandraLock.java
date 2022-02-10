@@ -1,9 +1,9 @@
 package com.dekses.cassandra.lock;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 
 /**
  * Distributed lock implementation based on Cassandra lightweight 
@@ -12,7 +12,7 @@ import com.datastax.driver.core.Session;
 public class CassandraLock implements Lock {
 
 	/** Current Cassandra session */
-	private Session session;
+	private CqlSession session;
 	
 	/** Lock owner name */
 	private String owner;
@@ -40,7 +40,7 @@ public class CassandraLock implements Lock {
 	 * @param deletePrep
 	 * @param updatePrep
 	 */
-	public CassandraLock(Session session, String owner, String name, int ttl, PreparedStatement insertPrep, PreparedStatement selectPrep, PreparedStatement deletePrep, PreparedStatement updatePrep) {
+	public CassandraLock(CqlSession session, String owner, String name, int ttl, PreparedStatement insertPrep, PreparedStatement selectPrep, PreparedStatement deletePrep, PreparedStatement updatePrep) {
 		this.session = session;
 		this.owner = owner;
 		this.name = name;
