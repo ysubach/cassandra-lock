@@ -1,12 +1,16 @@
 package com.dekses.cassandra.lock;
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Cluster.Builder;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 
 /**
  * Factory class for lock objects. Encapsulates creation of Cassandra
@@ -14,9 +18,11 @@ import com.datastax.driver.core.Session;
  * the factory.
  */
 public class LockFactory {
-	
+
+	private static final int CASSANDRA_DEFAULT_PORT = 9042;
+
 	/** Current Cassandra session */
-	private Session session;
+	private CqlSession session;
 	
 	/** Default owner name */
 	private String defaultOwner;
@@ -35,7 +41,7 @@ public class LockFactory {
 	 * Constructor, uses Cassandra session
 	 * @param session External Cassandra session
 	 */
-	public LockFactory(Session session) {
+	public LockFactory(CqlSession session) {
 		this.session = session;
 		generalInit();
 	}
@@ -44,16 +50,35 @@ public class LockFactory {
 	 * Constructor, creates Cassandra session
 	 * @param contactPoints Cassandra cluster contact points
 	 * @param keyspace Keyspace for `lock_leases`
+	 * @param localDataCenter Local Datacenter of the Cassandra cluster
+	 * @param userName Cassandra user name
+	 * @param password Cassandra password
 	 */
-	public LockFactory(String contactPoints, String keyspace) {
-		Builder builder = Cluster.builder();
-		for (String point : contactPoints.split(",")) {
-			builder.addContactPoint(point.trim());
+	public LockFactory(String contactPoints, String keyspace, String localDataCenter, String userName, String password) {
+
+		List<InetSocketAddress> contactPointsList = new ArrayList();
+		for (String n : contactPoints.split(",")) {
+			String[] hostPort = n.split(":");
+			//In case the contact points only contain the host assuming the default port.
+			int port = CASSANDRA_DEFAULT_PORT;
+			if (hostPort.length > 1) {
+				port = Integer.parseInt(hostPort[1]);
+			}
+			contactPointsList.add(new InetSocketAddress(hostPort[0], port));
 		}
-		
-		Cluster cluster = builder.build();
-	    session = cluster.connect();
-	    session.execute("USE " + keyspace);
+
+		DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
+				.withString(DefaultDriverOption.REQUEST_CONSISTENCY, ConsistencyLevel.QUORUM.name())
+				.build();
+
+		CqlSessionBuilder builder = CqlSession.builder()
+				.addContactPoints(contactPointsList)
+				.withConfigLoader(loader)
+				.withLocalDatacenter(localDataCenter)
+				.withAuthCredentials(userName, password);
+
+	    session = builder.build();
+		session.execute("USE " + keyspace);
 	    generalInit();
 	}
 	
@@ -63,14 +88,10 @@ public class LockFactory {
 	 */
 	private void generalInit() {
 		defaultOwner = UUID.randomUUID().toString();
-		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS USING TTL ?"); // 
-		insertPrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
+		insertPrep = session.prepare("INSERT INTO lock_leases (name, owner) VALUES (?,?) IF NOT EXISTS USING TTL ?");
 		selectPrep = session.prepare("SELECT * FROM lock_leases WHERE name = ?");
-		selectPrep.setConsistencyLevel(ConsistencyLevel.SERIAL);
 		deletePrep = session.prepare("DELETE FROM lock_leases WHERE name = ? IF owner = ?");
-		deletePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 		updatePrep = session.prepare("UPDATE lock_leases USING TTL ? SET owner = ? WHERE name = ? IF owner = ?");
-		updatePrep.setConsistencyLevel(ConsistencyLevel.QUORUM);
 	}
 	
 	/**
@@ -140,7 +161,7 @@ public class LockFactory {
 	 * Singleton initialization
 	 * @param session Cassandra session
 	 */
-	public static void initialize(Session session) {
+	public static void initialize(CqlSession session) {
 		instance = new LockFactory(session);
 	}
 	
@@ -148,9 +169,12 @@ public class LockFactory {
 	 * Singleton initialization
 	 * @param contactPoints Cassandra cluster contact points
 	 * @param keyspace Keyspace for `lock_leases`
+	 * @param datacenter Local Datacenter of the Cassandra cluster
+	 * @param userName Cassandra user name
+	 * @param password Cassandra password
 	 */
-	public static void initialize(String contactPoints, String keyspace) {
-		instance = new LockFactory(contactPoints, keyspace);
+	public static void initialize(String contactPoints, String keyspace, String datacenter, String userName, String password) {
+		instance = new LockFactory(contactPoints, keyspace, datacenter, userName, password);
 	}
 	
 	/**
